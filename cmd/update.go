@@ -77,6 +77,8 @@ func executeUpdate(cmd *cobra.Command, args []string) {
 		}
 
 		for module, gitVersion := range sourcesInFile {
+			gitVersion := gitVersion
+
 			if gitVersion.LocalVersionString() == "HEAD" && !versionUnversioned {
 				fmt.Printf("skipping: %s (unversioned module, to force versioning re-run with --version-unversioned\n", module)
 				continue
