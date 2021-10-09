@@ -31,7 +31,7 @@ jobs:
 
 
   audit:
-    name: Go Sec
+    name: Run Go Sec
     runs-on: ubuntu-latest
     env:
       GO111MODULE: on

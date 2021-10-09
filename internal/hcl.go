@@ -148,7 +148,7 @@ func (p *HclParser) UpdateBlockSource(source *GitSource) {
 }
 
 func parseHcl(filePath string) (*hclwrite.File, []error) {
-	raw, err := ioutil.ReadFile(filePath)
+	raw, err := ioutil.ReadFile(filepath.Clean(filePath))
 	if err != nil {
 		return nil, []error{err}
 	}
