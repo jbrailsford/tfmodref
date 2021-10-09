@@ -35,13 +35,20 @@ func init() {
 		tfExtensions[ext] = nil
 	}
 
-	handleCobraError(rootCmd.MarkFlagRequired("base-path"))
-	handleCobraError(rootCmd.MarkFlagRequired("extensions"))
+	if path == "" {
+		path = "."
+	}
 
-	handleCobraError(rootCmd.MarkFlagDirname("path"))
-	handleCobraError(rootCmd.MarkFlagFilename("path"))
+	if len(*extensions) == 0 {
+		*extensions = []string{".hcl", ".tf"}
+	}
+
+	handleCobraError(rootCmd.MarkPersistentFlagDirname("path"))
+	handleCobraError(rootCmd.MarkPersistentFlagFilename("path"))
 }
 
 func handleCobraError(err error) {
-	util.ErrorAndExit("an error occured starting the applicaiton (%s)", err.Error())
+	if err != nil {
+		util.ErrorAndExit("an error occured starting the applicaiton (%s)", err.Error())
+	}
 }
