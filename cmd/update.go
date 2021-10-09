@@ -115,7 +115,9 @@ func executeUpdate(cmd *cobra.Command, args []string) {
 		}
 
 		if !dryRun {
-			parser.Save()
+			if err := parser.Save(); err != nil {
+				fmt.Fprintf(os.Stderr, "error saving file at %s (%s)", path, err.Error())
+			}
 		}
 	}
 }
