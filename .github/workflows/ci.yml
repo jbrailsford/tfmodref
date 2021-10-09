@@ -1,0 +1,35 @@
+name: ci
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ${{ matrix.operating-system }}
+    env:
+      GO111MODULE: on
+    strategy:
+      matrix:
+        operating-system: [ubuntu-latest, windows-latest]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+  audit:
+    name: Go Sec
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: on
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: ./...
