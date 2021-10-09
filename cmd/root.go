@@ -35,9 +35,13 @@ func init() {
 		tfExtensions[ext] = nil
 	}
 
-	rootCmd.MarkFlagRequired("base-path")
-	rootCmd.MarkFlagRequired("extensions")
+	handleCobraError(rootCmd.MarkFlagRequired("base-path"))
+	handleCobraError(rootCmd.MarkFlagRequired("extensions"))
 
-	rootCmd.MarkFlagDirname("path")
-	rootCmd.MarkFlagFilename("path")
+	handleCobraError(rootCmd.MarkFlagDirname("path"))
+	handleCobraError(rootCmd.MarkFlagFilename("path"))
+}
+
+func handleCobraError(err error) {
+	util.ErrorAndExit("an error occured starting the applicaiton (%s)", err.Error())
 }

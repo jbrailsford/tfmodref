@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -58,4 +59,10 @@ func FindTerraformFiles(basePath string, extensions *FileExtensions) ([]string, 
 	})
 
 	return paths, err
+}
+
+// ErrorAndExit writes the given message to stderr and exits the program.
+func ErrorAndExit(msg string, params ...interface{}) {
+	fmt.Fprintf(os.Stderr, fmt.Sprintf("%s\n", msg), params...)
+	os.Exit(1)
 }

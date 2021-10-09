@@ -55,8 +55,7 @@ func executeUpdate(cmd *cobra.Command, args []string) {
 	var version *semver.Version
 	if specifiedVersion != "" {
 		if version, _ = semver.NewVersion(specifiedVersion); version == nil {
-			fmt.Fprintf(os.Stderr, "specified version string %s is invalid\n", specifiedVersion)
-			os.Exit(1)
+			util.ErrorAndExit("specified version string %s is invalid\n", specifiedVersion)
 		}
 	}
 
