@@ -82,7 +82,8 @@ func (p *HclParser) FindGitSources(includeRemote bool) (map[string]GitSource, er
 			return nil, err
 		}
 
-		if queryString.Has("ref") {
+		// queryString.Has exists (url.Values.Has) but GoSec can't see it for some reason and fails?
+		if _, ok := queryString["ref"]; ok {
 			sv, _ := semver.NewVersion(queryString.Get("ref"))
 			gitSource.localVersion = sv
 			queryString.Del("ref")
@@ -118,8 +119,6 @@ func (p *HclParser) Save() error {
 		return err
 	}
 
-	defer file.Close()
-
 	output := bufio.NewWriter(file)
 	defer output.Flush()
 
@@ -129,7 +128,7 @@ func (p *HclParser) Save() error {
 		return err
 	}
 
-	return nil
+	return file.Close()
 }
 
 // SetSourceVersion updates the block source in memory to change the given sources' version to the version specified.
@@ -148,7 +147,7 @@ func (p *HclParser) UpdateBlockSource(source *GitSource) {
 }
 
 func parseHcl(filePath string) (*hclwrite.File, []error) {
-	raw, err := ioutil.ReadFile(filePath)
+	raw, err := ioutil.ReadFile(filepath.Clean(filePath))
 	if err != nil {
 		return nil, []error{err}
 	}

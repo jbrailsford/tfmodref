@@ -55,8 +55,7 @@ func executeUpdate(cmd *cobra.Command, args []string) {
 	var version *semver.Version
 	if specifiedVersion != "" {
 		if version, _ = semver.NewVersion(specifiedVersion); version == nil {
-			fmt.Fprintf(os.Stderr, "specified version string %s is invalid\n", specifiedVersion)
-			os.Exit(1)
+			util.ErrorAndExit("specified version string %s is invalid\n", specifiedVersion)
 		}
 	}
 
@@ -77,6 +76,8 @@ func executeUpdate(cmd *cobra.Command, args []string) {
 		}
 
 		for module, gitVersion := range sourcesInFile {
+			gitVersion := gitVersion
+
 			if gitVersion.LocalVersionString() == "HEAD" && !versionUnversioned {
 				fmt.Printf("skipping: %s (unversioned module, to force versioning re-run with --version-unversioned\n", module)
 				continue
@@ -113,7 +114,9 @@ func executeUpdate(cmd *cobra.Command, args []string) {
 		}
 
 		if !dryRun {
-			parser.Save()
+			if err := parser.Save(); err != nil {
+				fmt.Fprintf(os.Stderr, "error saving file at %s (%s)", path, err.Error())
+			}
 		}
 	}
 }
