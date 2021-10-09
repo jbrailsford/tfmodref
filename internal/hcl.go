@@ -82,7 +82,8 @@ func (p *HclParser) FindGitSources(includeRemote bool) (map[string]GitSource, er
 			return nil, err
 		}
 
-		if queryString.Has("ref") {
+		// queryString.Has exists (url.Values.Has) but GoSec can't see it for some reason and fails?
+		if _, ok := queryString["ref"]; ok {
 			sv, _ := semver.NewVersion(queryString.Get("ref"))
 			gitSource.localVersion = sv
 			queryString.Del("ref")
