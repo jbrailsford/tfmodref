@@ -32,6 +32,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GO111MODULE: on
+    permissions:
+      security-events: write
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -43,5 +45,7 @@ jobs:
         uses: github/codeql-action/init@v1
         with:
           languages: go
+      - name: CodeQL Autobuild
+        uses: github/codeql-action/autobuild@v1
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v1
