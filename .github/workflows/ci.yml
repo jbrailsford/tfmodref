@@ -5,40 +5,36 @@ on:
       - main
     paths-ignore:
       - '**.md'
-  pull_request:
-    paths-ignore:
-      - '**.md'
+
 jobs:
-  build-test:
-    name: Build & Test
-    runs-on: ${{ matrix.operating-system }}
-    env:
-      GO111MODULE: on
+  release:
+    name: Release tfmodref
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        operating-system: [ubuntu-latest, windows-latest]
+        goos: [linux, windows, darwin]
+        goarch: ["386", amd64]
+        exclude:  
+          - goarch: "386"
+            goos: darwin 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.17
-      - name: Build
-        run: go build -v ./...
-      - name: Test
-        run: go test -v ./...
-
-
-  audit:
-    name: Run Go Sec
-    runs-on: ubuntu-latest
-    env:
-      GO111MODULE: on
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Run Gosec Security Scanner
-        uses: securego/gosec@master
-        with:
-          args: ./...
+    - uses: actions/checkout@v2
+    - name: Bump version and push tag
+      id: version
+      uses: anothrNick/github-tag-action@1.36.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        WITH_V: true
+        RELEASE_BRANCHES: main
+    - name: Release for ${{ matrix.goos }} (${{ matrix.goarch }})
+      uses: wangyoucao577/go-release-action@v1.20
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        goos: ${{ matrix.goos }}
+        goarch: ${{ matrix.goarch }}
+        goversion: 1.17
+        binary_name: "tfmodref"
+        extra_files: LICENSE README.md
+        release_tag: ${{ steps.version.new_tag }}
+        md5sum: true
+        sha256sum: true

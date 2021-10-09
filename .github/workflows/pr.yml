@@ -1,0 +1,48 @@
+name: pr
+on:
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ${{ matrix.operating-system }}
+    env:
+      GO111MODULE: on
+    strategy:
+      matrix:
+        operating-system: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+      - name: Build
+        run: go build -v ./...
+      - name: Test
+        run: go test -v ./...
+
+
+  audit:
+    name: Security & Code Quality
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: on
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: ./...
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages:
+            - go
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v1
