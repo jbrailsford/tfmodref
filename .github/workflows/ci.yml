@@ -26,7 +26,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         WITH_V: true
         RELEASE_BRANCHES: main
-    - name: Release ${{ steps.version.new_tag }} for ${{ matrix.goos }} (${{ matrix.goarch }})
+    - name: Release ${{ steps.version.outputs.new_tag }} for ${{ matrix.goos }} (${{ matrix.goarch }})
       uses: wangyoucao577/go-release-action@v1.20
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -35,6 +35,6 @@ jobs:
         goversion: 1.17
         binary_name: "tfmodref"
         extra_files: LICENSE README.md
-        release_tag: ${{ steps.version.new_tag }}
+        release_tag: ${{ steps.version.outputs.new_tag }}
         md5sum: true
         sha256sum: true
