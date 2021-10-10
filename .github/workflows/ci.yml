@@ -43,6 +43,9 @@ jobs:
           - goarch: "386"
             goos: darwin
     steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: '0'
     - name: Release ${{ needs.version.outputs.new_tag }} for ${{ matrix.goos }} (${{ matrix.goarch }})
       uses: wangyoucao577/go-release-action@v1.20
       with:
