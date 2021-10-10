@@ -26,6 +26,14 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         WITH_V: true
         RELEASE_BRANCHES: main
+    - name: Create a GitHub release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.new_tag }}
+        release_name: Release ${{ steps.version.outputs.new_tag }}
+        body: ${{ steps.version.outputs.changelog }}
     - name: Release ${{ steps.version.outputs.new_tag }} for ${{ matrix.goos }} (${{ matrix.goarch }})
       uses: wangyoucao577/go-release-action@v1.20
       with:
