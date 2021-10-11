@@ -98,6 +98,10 @@ func executeUpdate(cmd *cobra.Command, args []string) {
 			}
 
 		update:
+			if gitVersion.IsVersion(targetVersion) {
+				continue
+			}
+
 			if gitVersion.WouldForceDowngrade(targetVersion) && !allowDowngrades {
 				fmt.Printf("skipping: %s (target version %s is less than current version %s)\n", module, targetVersion, gitVersion.LocalVersionString())
 				continue

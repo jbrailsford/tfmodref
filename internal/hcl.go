@@ -12,11 +12,12 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/hashicorp/go-getter"
-	urlhelper "github.com/hashicorp/go-getter/helper/url"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/zclconf/go-cty/cty"
+
+	urlhelper "github.com/hashicorp/go-getter/helper/url"
 )
 
 // TerragruntBlockType denotes the parent block type for a source ref in a terragrunt file
@@ -36,7 +37,9 @@ type HclParser struct {
 // This also contains the raw URL extracted from that block.
 type BlockSource struct {
 	Name         string
-	rawSourceURL string
+	gitRemoteURL *url.URL
+	sourceURL    *url.URL
+	prefixes     []string
 }
 
 // NewHclParser reads in a given HCL file and instansiates a new instance of HclParser
@@ -61,38 +64,24 @@ func (p *HclParser) FindGitSources(includeRemote bool) (map[string]GitSource, er
 
 	blocksWithSource := p.findBlocksWithGitSource()
 
+	// probably don't need to map one struct to another here, may be cleaner to build just one.
 	for i, v := range blocksWithSource {
 		gitSource := GitSource{
 			BlockIndex: i,
 		}
 
-		// TODO: break this up and handle errors
-		parsedURL, err := parseSourceURL(v.rawSourceURL)
-		if err != nil {
-			return nil, err
-		}
-
-		rootURL, err := splitSourceURL(parsedURL)
-		if err != nil {
-			return nil, err
-		}
-
-		queryString, err := url.ParseQuery(rootURL.RawQuery)
-		if err != nil {
-			return nil, err
-		}
-
+		qs := v.sourceURL.Query()
 		// queryString.Has exists (url.Values.Has) but GoSec can't see it for some reason and fails?
-		if _, ok := queryString["ref"]; ok {
-			sv, _ := semver.NewVersion(queryString.Get("ref"))
+		if _, ok := qs["ref"]; ok {
+			sv, _ := semver.NewVersion(qs.Get("ref"))
 			gitSource.localVersion = sv
-			queryString.Del("ref")
 		} else {
 			gitSource.LocalVersionIsMain = true
 		}
 
-		rootURL.RawQuery = queryString.Encode()
-		gitSource.URL = rootURL
+		gitSource.SourceURL = v.sourceURL
+		gitSource.RemoteURL = v.gitRemoteURL
+		gitSource.Prefixes = v.prefixes
 
 		if includeRemote {
 			if err := gitSource.UpdateRemoteTags(); err != nil {
@@ -128,21 +117,17 @@ func (p *HclParser) Save() error {
 		return err
 	}
 
-	return file.Close()
-}
+	if err := output.Flush(); err != nil {
+		return err
+	}
 
-// SetSourceVersion updates the block source in memory to change the given sources' version to the version specified.
-func (s *GitSource) SetSourceVersion(version *semver.Version) {
-	query, _ := url.ParseQuery(s.URL.RawQuery)
-	query.Add("ref", version.String())
-	s.URL.RawQuery = query.Encode()
-	s.localVersion = version
+	return file.Close()
 }
 
 // UpdateBlockSource udpates the block source in the HCL, in memory, to match the source contained in the GitSource
 func (p *HclParser) UpdateBlockSource(source *GitSource) {
 	body := p.file.Body().Blocks()[source.BlockIndex].Body()
-	body.SetAttributeValue("source", cty.StringVal(source.URL.String()))
+	body.SetAttributeValue("source", cty.StringVal(source.HCLSafeSourceURL()))
 	body.BuildTokens(nil)
 }
 
@@ -169,7 +154,7 @@ func (p *HclParser) findBlocksWithGitSource() (blocksWithRefs map[int]BlockSourc
 		// We are only interested in blocks that *can* contain a source attribute
 		if block.Type() == TerraformBlockType || block.Type() == TerragruntBlockType {
 			// Attempt to find the source attribtue within the block, and return if if the url is a valid git URL
-			if url := extractGitURLFromAttribute(*block.Body(), filepath.Dir(p.filePath), "source"); url != "" {
+			if prefixes, url, gitURL := extractGitURLFromAttribute(*block.Body(), filepath.Dir(p.filePath), "source"); url != nil && gitURL != nil {
 				// Set the module name to the filepath of source hcl
 				moduleName := p.filePath
 
@@ -183,7 +168,9 @@ func (p *HclParser) findBlocksWithGitSource() (blocksWithRefs map[int]BlockSourc
 
 				blocksWithRefs[i] = BlockSource{
 					Name:         moduleName,
-					rawSourceURL: url,
+					gitRemoteURL: gitURL,
+					sourceURL:    url,
+					prefixes:     prefixes,
 				}
 			}
 
@@ -193,17 +180,43 @@ func (p *HclParser) findBlocksWithGitSource() (blocksWithRefs map[int]BlockSourc
 	return
 }
 
-func extractGitURLFromAttribute(body hclwrite.Body, parentDirectory string, searchAttr string) (url string) {
-	if attr := body.GetAttribute(searchAttr); attr != nil {
-		// Build the tokens set in the HCL in order to obtain the value contained within
-		tokens := attr.Expr().BuildTokens(nil)
-		if value := extractTokenStringValue(tokens); value != "" {
-			// Set url value if the given value is a valid git URL (SSH/HTTPS)
-			url, _ = getter.Detect(value, parentDirectory, []getter.Detector{&getter.GitDetector{}})
-		}
+func extractGitURLFromAttribute(body hclwrite.Body, parentDirectory string, searchAttr string) ([]string, *url.URL, *url.URL) {
+	attr := body.GetAttribute(searchAttr)
+	if attr == nil {
+		return []string{}, nil, nil
 	}
 
-	return
+	// Build the tokens set in the HCL in order to obtain the value contained within
+	// TODO: make this cleaner
+	tokens := attr.Expr().BuildTokens(nil)
+	value := extractTokenStringValue(tokens)
+	if value == "" {
+		return []string{}, nil, nil
+	}
+
+	rawGitURL, err := getter.Detect(value, parentDirectory, []getter.Detector{&getter.GitDetector{}, &getter.GitHubDetector{}, &getter.GitLabDetector{}})
+	if err != nil {
+		return []string{}, nil, nil
+	}
+
+	prefixes, rawURL := splitSourceURLGetters(rawGitURL)
+	url, err := urlhelper.Parse(rawURL)
+	if err != nil {
+		return []string{}, nil, nil
+	}
+
+	gitURL, err := urlhelper.Parse(rawURL)
+	if err != nil {
+		return []string{}, nil, nil
+	}
+
+	if strings.Contains(gitURL.Path, "//") {
+		ejectGitURLFolder(gitURL)
+	}
+
+	gitURL.RawQuery = ""
+
+	return prefixes, url, gitURL
 }
 
 func extractTokenStringValue(tokens hclwrite.Tokens) (value string) {
@@ -220,32 +233,27 @@ func extractTokenStringValue(tokens hclwrite.Tokens) (value string) {
 	return
 }
 
+func ejectGitURLFolder(url *url.URL) {
+	parts := strings.SplitN(url.Path, "//", 2)
+	if len(parts) > 1 {
+		(*url).Path = parts[0]
+	}
+
+}
+
 // Everything below here taken (with love) from https://github.com/gruntwork-io/terragrunt/blob/master/cli/tfsource/types.go
+// and modified garishly.
 var forcedRegexp = regexp.MustCompile(`^([A-Za-z0-9]+)::(.+)$`)
 
-func parseSourceURL(source string) (*url.URL, error) {
+func splitSourceURLGetters(source string) ([]string, string) {
 	forcedGetters := []string{}
-	// Continuously strip the forced getters until there is no more. This is to handle complex URL schemes like the
-	// git-remote-codecommit style URL.
 	forcedGetter, rawSourceURL := getForcedGetter(source)
 	for forcedGetter != "" {
-		// Prepend like a stack, so that we prepend to the URL scheme in the right order.
 		forcedGetters = append([]string{forcedGetter}, forcedGetters...)
 		forcedGetter, rawSourceURL = getForcedGetter(rawSourceURL)
 	}
 
-	// Parse the URL without the getter prefix
-	canonicalSourceURL, err := urlhelper.Parse(rawSourceURL)
-	if err != nil {
-		return nil, err
-	}
-
-	// Reattach the "getter" prefix as part of the scheme
-	for _, forcedGetter := range forcedGetters {
-		canonicalSourceURL.Scheme = fmt.Sprintf("%s::%s", forcedGetter, canonicalSourceURL.Scheme)
-	}
-
-	return canonicalSourceURL, nil
+	return forcedGetters, rawSourceURL
 }
 
 func getForcedGetter(sourceURL string) (string, string) {
@@ -254,17 +262,4 @@ func getForcedGetter(sourceURL string) (string, string) {
 	}
 
 	return "", sourceURL
-}
-
-// Modified from original source, as we don't get about the suffixed folder path,
-// only the whole versioned item.
-func splitSourceURL(sourceURL *url.URL) (*url.URL, error) {
-	pathSplitOnDoubleSlash := strings.SplitN(sourceURL.Path, "//", 2)
-
-	if len(pathSplitOnDoubleSlash) > 1 {
-		sourceURL.Path = pathSplitOnDoubleSlash[0]
-	}
-
-	return sourceURL, nil
-
 }
