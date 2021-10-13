@@ -24,8 +24,17 @@ jobs:
       - name: Build
         run: go build -v ./...
       - name: Test
-        run: go test -v ./...
-
+        run: go test -v ./... -race -coverprofile=coverage.txt -covermode=atomic
+      - name: Upload coverage to Codecov
+        run: bash <(curl -s https://codecov.io/bash)
+      - uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.txt
+          flags: unittests
+          name: ${{ GITHUB_REF }}
+          env_vars: OS
+          fail_ci_if_error: true
 
   audit:
     name: Security & Code Quality
