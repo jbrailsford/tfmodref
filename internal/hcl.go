@@ -223,7 +223,7 @@ func extractTokenStringValue(tokens hclwrite.Tokens) (value string) {
 	// Terraform source blocks do not allow variablse and are comprised of TokenOQuote + (TokenQuotedLit * n) + TokenCQuote,
 	// given this, we need to extract and combine all values betwen OQuote and CQuote.
 	if tokens[0].Type == hclsyntax.TokenOQuote && tokens[len(tokens)-1].Type == hclsyntax.TokenCQuote {
-		for _, token := range tokens {
+		for _, token := range tokens[1 : len(tokens)-1] {
 			value += string(token.Bytes)
 		}
 	}
