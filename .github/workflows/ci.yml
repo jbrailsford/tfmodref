@@ -5,6 +5,7 @@ on:
       - main
     paths-ignore:
       - '**.md'
+      - '**_test.go'
 
 jobs:
   release:
