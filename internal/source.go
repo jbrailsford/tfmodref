@@ -3,7 +3,6 @@ package internal
 import (
 	"fmt"
 	"net/url"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -81,8 +80,6 @@ func (gs *GitSource) UpdateRemoteTags() error {
 
 	return nil
 }
-
-var qsRegex = regexp.MustCompile("([^\\?]+)(\\?.*)?")
 
 // SetSourceVersion updates the git source in memory to change the given sources' version to the version specified.
 func (gs *GitSource) SetSourceVersion(version *semver.Version) {
