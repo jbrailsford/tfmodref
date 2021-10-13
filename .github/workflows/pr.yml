@@ -13,10 +13,12 @@ jobs:
       GO111MODULE: on
     strategy:
       matrix:
-        operating-system: [ubuntu-latest, windows-latest]
+        operating-system: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: '0'
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
@@ -24,12 +26,20 @@ jobs:
       - name: Build
         run: go build -v ./...
       - name: Test
-        run: go test -v ./...
-
+        run: go test -v ./... -race -coverprofile="coverage.txt" -covermode=atomic
+      - name: Publish codecov report
+        uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.txt
+          flags: unittests
+          name: ${{ env.GITHUB_REF }} (${{ matrix.operating-system }})
+          fail_ci_if_error: true
 
   audit:
     name: Security & Code Quality
     runs-on: ubuntu-latest
+    needs: build-test
     env:
       GO111MODULE: on
     permissions:
@@ -37,6 +47,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: '0'
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:

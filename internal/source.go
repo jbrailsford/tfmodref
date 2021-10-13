@@ -15,7 +15,9 @@ type GitSource struct {
 	RemoteVersions      semver.Collection
 	LocalVersionIsMain  bool
 	BlockIndex          int
-	URL                 *url.URL
+	SourceURL           *url.URL
+	RemoteURL           *url.URL
+	Prefixes            []string
 }
 
 // LocalVersionString returns either `HEAD` (in the case of no local version being set)
@@ -25,7 +27,7 @@ func (gs *GitSource) LocalVersionString() string {
 		return "HEAD"
 	}
 
-	return gs.localVersion.String()
+	return gs.localVersion.Original()
 }
 
 // WouldForceDowngrade returns true of the current local version is greater than the provided
@@ -33,6 +35,15 @@ func (gs *GitSource) LocalVersionString() string {
 func (gs *GitSource) WouldForceDowngrade(version *semver.Version) bool {
 	if gs.localVersion != nil {
 		return gs.localVersion.GreaterThan(version)
+	}
+
+	return false
+}
+
+// IsVersion returns true if the source version is the same as the supplied version
+func (gs *GitSource) IsVersion(version *semver.Version) bool {
+	if gs.localVersion != nil {
+		return gs.localVersion.Equal(version)
 	}
 
 	return false
@@ -53,19 +64,28 @@ func (gs *GitSource) FindLatestTagForConstraint(constraint *semver.Constraints) 
 // UpdateRemoteTags requests a list of git tags from the source origin, and sets
 // them against this GitSource object.
 func (gs *GitSource) UpdateRemoteTags() error {
-	if tags := SourceCache.Get(gs.URL.String()); tags != nil {
+	if tags := SourceCache.Get(gs.RemoteURL.String()); tags != nil {
 		gs.setRemoteTags(tags)
 	} else {
-		tags, err := RemoteTags(gs.URL.String())
+		tags, err := RemoteTags(gs.RemoteURL.String())
 		if err != nil {
 			return err
 		}
 
 		gs.setRemoteTags(tags)
-		SourceCache.Set(gs.URL.String(), gs.RemoteVersions)
+		SourceCache.Set(gs.RemoteURL.String(), gs.RemoteVersions)
 	}
 
 	return nil
+}
+
+// SetSourceVersion updates the git source in memory to change the given sources' version to the version specified.
+func (gs *GitSource) SetSourceVersion(version *semver.Version) {
+	qs := gs.SourceURL.Query()
+	qs.Set("ref", version.Original())
+	gs.SourceURL.RawQuery = qs.Encode()
+	gs.localVersion = version
+	gs.LocalVersionIsMain = false
 }
 
 func (gs *GitSource) setRemoteTags(tags semver.Collection) {
@@ -73,4 +93,9 @@ func (gs *GitSource) setRemoteTags(tags semver.Collection) {
 
 	gs.LatestRemoteVersion = tags[len(tags)-1]
 	gs.RemoteVersions = tags
+}
+
+// HCLSafeSourceURL retruns a url in string form matching the original HCL source (with prefixes attached)
+func (gs *GitSource) HCLSafeSourceURL() string {
+	return gs.SourceURL.String()
 }

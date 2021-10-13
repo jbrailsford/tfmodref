@@ -8,6 +8,7 @@ require (
 	github.com/hashicorp/go-getter v1.5.8
 	github.com/hashicorp/hcl/v2 v2.10.1
 	github.com/spf13/cobra v1.2.1
+	github.com/stretchr/testify v1.7.0
 	github.com/zclconf/go-cty v1.8.0
 )
 
@@ -21,6 +22,7 @@ require (
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/aws/aws-sdk-go v1.40.55 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emirpasic/gods v1.12.0 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.3.1 // indirect
@@ -40,6 +42,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
@@ -57,4 +60,5 @@ require (
 	google.golang.org/grpc v1.41.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
