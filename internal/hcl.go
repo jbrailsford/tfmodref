@@ -220,14 +220,12 @@ func extractGitURLFromAttribute(body hclwrite.Body, parentDirectory string, sear
 }
 
 func extractTokenStringValue(tokens hclwrite.Tokens) (value string) {
-	// Terraform source blocks do not allow variablse and are comprised of TokenOQuote + TokenQuotedLit + TokenCQuote,
-	// given this, we only care about three part tokens, and in particularly the TokenQuotedLit
-	if len(tokens) != 3 {
-		return
-	}
-
-	if tokens[0].Type == hclsyntax.TokenOQuote && tokens[2].Type == hclsyntax.TokenCQuote {
-		value = string(tokens[1].Bytes)
+	// Terraform source blocks do not allow variablse and are comprised of TokenOQuote + (TokenQuotedLit * n) + TokenCQuote,
+	// given this, we need to extract and combine all values betwen OQuote and CQuote.
+	if tokens[0].Type == hclsyntax.TokenOQuote && tokens[len(tokens)-1].Type == hclsyntax.TokenCQuote {
+		for _, token := range tokens {
+			value += string(token.Bytes)
+		}
 	}
 
 	return
