@@ -32,7 +32,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.txt
           flags: unittests
-          name: ${{ GITHUB_REF }}
+          name: ${{ env.GITHUB_REF }}
           env_vars: OS
           fail_ci_if_error: true
 
