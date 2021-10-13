@@ -1,10 +1,8 @@
 package internal
 
 import (
-	"fmt"
 	"net/url"
 	"sort"
-	"strings"
 
 	"github.com/Masterminds/semver"
 )
@@ -97,16 +95,5 @@ func (gs *GitSource) setRemoteTags(tags semver.Collection) {
 
 // HCLSafeSourceURL retruns a url in string form matching the original HCL source (with prefixes attached)
 func (gs *GitSource) HCLSafeSourceURL() string {
-	source := gs.SourceURL
-	// may need to handle more prefixes here, but this covers ssh://, git::git@, git::ssh:// and git::https://
-	if source.Scheme == "ssh" {
-		source.Scheme = ""
-	}
-
-	url := strings.TrimLeft(source.String(), "//")
-	for _, prefix := range gs.Prefixes {
-		url = prefix + "::" + url
-	}
-	fmt.Println(url)
-	return url
+	return gs.SourceURL.String()
 }

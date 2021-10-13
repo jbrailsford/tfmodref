@@ -153,8 +153,18 @@ func (p *HclParser) findBlocksWithGitSource() (blocksWithRefs map[int]BlockSourc
 	for i, block := range blocks {
 		// We are only interested in blocks that *can* contain a source attribute
 		if block.Type() == TerraformBlockType || block.Type() == TerragruntBlockType {
+			rawURL := extractGitURLFromAttribute(*block.Body(), "source")
+			if rawURL == "" {
+				continue
+			}
+
+			url, e := url.Parse(rawURL)
+			if e != nil {
+				continue
+			}
+
 			// Attempt to find the source attribtue within the block, and return if if the url is a valid git URL
-			if prefixes, url, gitURL := extractGitURLFromAttribute(*block.Body(), filepath.Dir(p.filePath), "source"); url != nil && gitURL != nil {
+			if prefixes, gitURL := parseGitURL(rawURL); gitURL != nil {
 				// Set the module name to the filepath of source hcl
 				moduleName := p.filePath
 
@@ -180,34 +190,28 @@ func (p *HclParser) findBlocksWithGitSource() (blocksWithRefs map[int]BlockSourc
 	return
 }
 
-func extractGitURLFromAttribute(body hclwrite.Body, parentDirectory string, searchAttr string) ([]string, *url.URL, *url.URL) {
+func extractGitURLFromAttribute(body hclwrite.Body, searchAttr string) string {
 	attr := body.GetAttribute(searchAttr)
 	if attr == nil {
-		return []string{}, nil, nil
+		return ""
 	}
 
-	// Build the tokens set in the HCL in order to obtain the value contained within
-	// TODO: make this cleaner
 	tokens := attr.Expr().BuildTokens(nil)
-	value := extractTokenStringValue(tokens)
-	if value == "" {
-		return []string{}, nil, nil
-	}
+	return extractTokenStringValue(tokens)
+}
 
-	rawGitURL, err := getter.Detect(value, parentDirectory, []getter.Detector{&getter.GitDetector{}, &getter.GitHubDetector{}, &getter.GitLabDetector{}})
+func parseGitURL(url string) ([]string, *url.URL) {
+	// We send emtpy PWD as we only preside over git urls.
+	rawGitURL, err := getter.Detect(url, "", []getter.Detector{&getter.GitDetector{}, &getter.GitHubDetector{}, &getter.GitLabDetector{}})
 	if err != nil {
-		return []string{}, nil, nil
+		return []string{}, nil
 	}
 
 	prefixes, rawURL := splitSourceURLGetters(rawGitURL)
-	url, err := urlhelper.Parse(rawURL)
-	if err != nil {
-		return []string{}, nil, nil
-	}
 
 	gitURL, err := urlhelper.Parse(rawURL)
 	if err != nil {
-		return []string{}, nil, nil
+		return []string{}, nil
 	}
 
 	if strings.Contains(gitURL.Path, "//") {
@@ -216,7 +220,7 @@ func extractGitURLFromAttribute(body hclwrite.Body, parentDirectory string, sear
 
 	gitURL.RawQuery = ""
 
-	return prefixes, url, gitURL
+	return prefixes, gitURL
 }
 
 func extractTokenStringValue(tokens hclwrite.Tokens) (value string) {
