@@ -8,6 +8,7 @@ on:
 jobs:
   build-test:
     name: Build & Test
+    id: build
     runs-on: ${{ matrix.operating-system }}
     env:
       GO111MODULE: on
@@ -26,7 +27,7 @@ jobs:
       - name: Build
         run: go build -v ./...
       - name: Test
-        run: go test -v ./... -race -coverprofile=coverage.txt -covermode=atomic
+        run: go test -v ./... -race -coverprofile="coverage.txt" -covermode=atomic
       - name: Publish codecov report
         uses: codecov/codecov-action@v2
         with:
@@ -39,6 +40,7 @@ jobs:
   audit:
     name: Security & Code Quality
     runs-on: ubuntu-latest
+    needs: build
     env:
       GO111MODULE: on
     permissions:
