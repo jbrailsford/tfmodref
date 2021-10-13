@@ -11,12 +11,15 @@ import (
 var (
 	unversionedSource GitSource
 	versionedSource   GitSource
+	versions          []semver.Version
 )
 
 func init() {
 	unversionedSourceURL, _ := url.Parse("git::git@github.com:terraform-aws-modules/terraform-aws-vpc.git")
 	versionedSourceURL, _ := url.Parse("git::git@github.com:terraform-aws-modules/terraform-aws-vpc.git?ref=v3.0.0")
 	remoteURL, _ := url.Parse("ssh://git@github.com:terraform-aws-modules/terraform-aws-vpc.git")
+
+	v, _ := semver.NewVersion("v3.0.0")
 
 	unversionedSource = GitSource{
 		localVersion:        nil,
@@ -36,7 +39,7 @@ func init() {
 	}
 
 	versionedSource = GitSource{
-		localVersion:        semver.MustParse("v3.0.0"),
+		localVersion:        v,
 		LatestRemoteVersion: semver.MustParse("v5.0.0"),
 		RemoteVersions: semver.Collection{
 			semver.MustParse("v1.0.0"),
@@ -54,8 +57,8 @@ func init() {
 }
 
 func TestLocalVersionString(t *testing.T) {
-	assert.Equal(t, unversionedSource.LocalVersionString(), "HEAD", "local version string should be HEAD when no local version set")
-	assert.Equal(t, versionedSource.LocalVersionString(), "v3.0.0", "local version string should not be HEAD when version set")
+	assert.Equal(t, "HEAD", unversionedSource.LocalVersionString(), "local version string should be HEAD when no local version set")
+	assert.Equal(t, "v3.0.0", versionedSource.LocalVersionString(), "local version string should not be HEAD when version set")
 }
 
 func TestDowngradeDetection(t *testing.T) {
@@ -76,7 +79,7 @@ func TestTagSearchingWithConstraint(t *testing.T) {
 	upgradeConstraint, _ := semver.NewConstraint("> 0.0.0")
 	equalConstraint, _ := semver.NewConstraint("= 2.0.0")
 	downgradeConstraint, _ := semver.NewConstraint("< 2.0.0")
-	assert.Equal(t, versionedSource.FindLatestTagForConstraint(upgradeConstraint), semver.MustParse("v5.0.0"))
-	assert.Equal(t, versionedSource.FindLatestTagForConstraint(equalConstraint), semver.MustParse("v2.0.0"))
-	assert.Equal(t, versionedSource.FindLatestTagForConstraint(downgradeConstraint), semver.MustParse("v1.0.0"))
+	assert.Equal(t, semver.MustParse("v5.0.0"), versionedSource.FindLatestTagForConstraint(upgradeConstraint))
+	assert.Equal(t, semver.MustParse("v2.0.0"), versionedSource.FindLatestTagForConstraint(equalConstraint))
+	assert.Equal(t, semver.MustParse("v1.0.0"), versionedSource.FindLatestTagForConstraint(downgradeConstraint))
 }

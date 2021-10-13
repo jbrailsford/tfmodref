@@ -3,7 +3,7 @@ package internal
 import "testing"
 
 var remotes = []string{
-	"git@github.com:terraform-aws-modules/terraform-aws-vpc.git",
+	// "git@github.com:terraform-aws-modules/terraform-aws-vpc.git",
 	"https://github.com/terraform-aws-modules/terraform-aws-vpc.git",
 }
 

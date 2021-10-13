@@ -27,7 +27,7 @@ func (gs *GitSource) LocalVersionString() string {
 		return "HEAD"
 	}
 
-	return gs.localVersion.String()
+	return gs.localVersion.Original()
 }
 
 // WouldForceDowngrade returns true of the current local version is greater than the provided
@@ -82,8 +82,10 @@ func (gs *GitSource) UpdateRemoteTags() error {
 // SetSourceVersion updates the git source in memory to change the given sources' version to the version specified.
 func (gs *GitSource) SetSourceVersion(version *semver.Version) {
 	qs := gs.SourceURL.Query()
-	qs.Set("ref", version.String())
+	qs.Set("ref", version.Original())
 	gs.SourceURL.RawQuery = qs.Encode()
+	gs.localVersion = version
+	gs.LocalVersionIsMain = false
 }
 
 func (gs *GitSource) setRemoteTags(tags semver.Collection) {
