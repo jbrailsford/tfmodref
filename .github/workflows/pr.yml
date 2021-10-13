@@ -31,7 +31,7 @@ jobs:
         uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.txt
+          files: coverage.txt
           flags: unittests
           name: ${{ env.GITHUB_REF }} (${{ matrix.operating-system }})
           fail_ci_if_error: true
