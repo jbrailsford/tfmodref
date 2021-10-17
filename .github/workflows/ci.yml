@@ -3,8 +3,6 @@ on:
   push:
     branches:
       - main
-      - feature/*
-      - fix/*
     paths-ignore:
       - '**.md'
   pull_request:
@@ -73,7 +71,7 @@ jobs:
   version: 
     name: Version release
     runs-on: ubuntu-latest
-    if: ${{ github.ref == "refs/heads/main" }}
+    if: github.ref == "refs/heads/main"
     outputs:
       new_tag: ${{ steps.version.outputs.new_tag }}
       changelog: ${{ steps.version.outputs.changelog }}
