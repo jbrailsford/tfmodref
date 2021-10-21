@@ -89,10 +89,16 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         release_branches: main
+    - name: Generate token
+      id: generate_token
+      uses: tibdex/github-app-token@v1
+      with:
+        app_id: ${{ secrets.RELEASE_APP_ID }}
+        private_key: ${{ secrets.RELEASE_APP_SECRET }}
     - name: Create a GitHub release
       uses: actions/create-release@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
       with:
         tag_name: ${{ steps.version.outputs.new_tag }}
         release_name: Release ${{ steps.version.outputs.new_tag }}
