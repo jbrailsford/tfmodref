@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -22,14 +23,19 @@ func (f *FileExtensions) Contains(extension string) bool {
 
 // AsCommaSeparatedString returns all keys in the FileExtensions map in a comma
 // separated string.
-func (f *FileExtensions) AsCommaSeparatedString() (s string) {
+func (f *FileExtensions) AsCommaSeparatedString() string {
+	keys := make([]string, len(*f))
+
+	// Could use append here, but this comes out slightly more efficient.
+	i := 0
 	for k := range *f {
-		s = fmt.Sprintf("%s, ", k)
+		keys[i] = k
+		i++
 	}
 
-	s = strings.TrimRight(s, ", ")
+	sort.Strings(keys)
 
-	return
+	return strings.Join(keys, ", ")
 }
 
 // FindTerraformFiles walks the current directory and finds files matching
