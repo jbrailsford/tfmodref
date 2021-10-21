@@ -7,7 +7,6 @@ jobs:
   release:
     name: Release tfmodref
     runs-on: ubuntu-latest
-    needs: version
     strategy:
       matrix:
         goos: [linux, windows, darwin]
