@@ -1,0 +1,41 @@
+name: release
+on:
+  release:
+    types: [created]
+
+jobs:        
+  release:
+    name: Release tfmodref
+    runs-on: ubuntu-latest
+    needs: version
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: ["386", amd64]
+        exclude:  
+          - goarch: "386"
+            goos: darwin
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+    - name: Create output directory
+      run: mkdir -p ./out
+    - name: Get release tag
+      id: get_tag
+      run: echo ::set-output name=tag::${GITHUB_REF/refs\/tags\//}
+    - name: Build ${{ needs.version.outputs.new_tag }} for ${{ matrix.goos }} (${{ matrix.goarch }})
+      run: |
+        output_suffix=$([ "$GOOS" == "linux" ] && echo "" || echo ".exe")
+        output_name="tfmodref_${{ steps.get_tag.outputs.tag }}_${GOOS}_${GOARCH}${output_suffix}"
+        go build main.go -o out/${output_name}
+        md5sum out/${output_name} | cut -d ' ' -f 1 > out/${output_name}.md5
+        sha256sum out/${output_name} | cut -d ' ' -f 1 > out/${output_name}.sha256
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+    - uses: softprops/action-gh-release@v1
+      with:
+        files: out/*
