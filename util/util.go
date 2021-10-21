@@ -24,7 +24,7 @@ func (f *FileExtensions) Contains(extension string) bool {
 // separated string.
 func (f *FileExtensions) AsCommaSeparatedString() (s string) {
 	for k := range *f {
-		s = fmt.Sprintf("%s, ", k)
+		s = fmt.Sprintf("%s%s, ", s, k)
 	}
 
 	s = strings.TrimRight(s, ", ")
