@@ -31,16 +31,17 @@ func init() {
 	extensions := rootCmd.PersistentFlags().StringSliceP("extensions", "e", []string{".hcl", ".tf"}, "file extensions of files to search in for references")
 
 	tfExtensions = make(util.FileExtensions)
+
+	if len(*extensions) == 0 {
+		*extensions = []string{".hcl", ".tf"}
+	}
+
 	for _, ext := range *extensions {
 		tfExtensions[ext] = nil
 	}
 
 	if path == "" {
 		path = "."
-	}
-
-	if len(*extensions) == 0 {
-		*extensions = []string{".hcl", ".tf"}
 	}
 
 	handleCobraError(rootCmd.MarkPersistentFlagDirname("path"))
