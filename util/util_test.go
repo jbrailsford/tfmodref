@@ -14,7 +14,7 @@ var extensions = FileExtensions{
 }
 
 func TestFileExtensionsContains(t *testing.T) {
-	assert.True(t, extensions.Contains("hcl"), "validate FileExtensions contains value")
+	assert.True(t, extensions.Contains(".hcl"), "validate FileExtensions contains value")
 }
 
 func TestFileExtensionsToCsvConversion(t *testing.T) {
