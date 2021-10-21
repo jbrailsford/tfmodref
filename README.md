@@ -4,24 +4,24 @@
 
 ## Commands
 ### `list`
-The list command (`tfmodref --list`) can be used to list local versions of modules in one or more files, and also retrieve the latest version in the repostiroy.
+The list command (`tfmodref list`) can be used to list local versions of modules in one or more files, and also retrieve the latest version in the repostiroy.
 
 #### Usage
 To list just local versions in the current directory and below:
 
-`tfmodref --list`
+`tfmodref list`
 
 To list local and the latest remote version in the current directory and below:
 
-`tfmodref --list --remote`
+`tfmodref list --remote`
 
 To list local and the latest remote versions in a specific file:
 
-`tfmodref --path a/path/to/a/file.tf --list --remote`
+`tfmodref --path a/path/to/a/file.tf list --remote`
 
 To list local versions in a different directory tree:
 
-`tfmodref --path some/other/folder --list`
+`tfmodref --path some/other/folder list`
 
 ### `update`
 The update command can be used to update the version('s) contained in file('s).
