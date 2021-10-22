@@ -27,7 +27,7 @@ jobs:
       run: echo ::set-output name=tag::${GITHUB_REF/refs\/tags\//}
     - name: Build ${{ needs.version.outputs.new_tag }} for ${{ matrix.goos }} (${{ matrix.goarch }})
       run: |
-        output_suffix=$([ "$GOOS" == "linux" ] && echo "" || echo ".exe")
+        output_suffix=$([ "$GOOS" == "windows" ] && echo ".exe" || echo "")
         output_name="tfmodref_${{ steps.get_tag.outputs.tag }}_${GOOS}_${GOARCH}${output_suffix}"
         go build -o out/${output_name}
         md5sum out/${output_name} | cut -d ' ' -f 1 > out/${output_name}.md5
